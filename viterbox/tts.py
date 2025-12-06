@@ -250,7 +250,10 @@ class Viterbox:
         
         # Load Voice Encoder
         ve = VoiceEncoder()
-        ve.load_state_dict(torch.load(ckpt_dir / "ve.pt", weights_only=True))
+        if device == "mps":
+            ve.load_state_dict(torch.load(ckpt_dir / "ve.pt", map_location='cpu',weights_only=True))
+        else:
+            ve.load_state_dict(torch.load(ckpt_dir / "ve.pt", weights_only=True))
         ve.to(device).eval()
         
         # Load T3 model
@@ -286,7 +289,10 @@ class Viterbox:
         
         # Load S3Gen
         s3gen = S3Gen()
-        s3gen.load_state_dict(torch.load(ckpt_dir / "s3gen.pt", weights_only=True))
+        if device == "mps":
+            s3gen.load_state_dict(torch.load(ckpt_dir / "s3gen.pt", map_location='cpu',weights_only=True))
+        else:
+            s3gen.load_state_dict(torch.load(ckpt_dir / "s3gen.pt", weights_only=True))
         s3gen.to(device).eval()
         
         # Load tokenizer
@@ -371,8 +377,12 @@ class Viterbox:
         eot = self.t3.hp.stop_text_token
         text_tokens = F.pad(text_tokens, (1, 0), value=sot)
         text_tokens = F.pad(text_tokens, (0, 1), value=eot)
-        
-        with torch.inference_mode(), torch.autocast(device_type='cuda', dtype=torch.float16, enabled=(self.device=='cuda')):
+
+        # Automatically detect device type to enable Autocast accordingly
+        use_autocast = self.device in ['cuda', 'mps']
+        device_type = 'cuda' if self.device == 'cuda' else 'mps'
+
+        with torch.inference_mode(), torch.autocast(device_type=device_type, dtype=torch.float16, enabled=(self.device==use_autocast)):
             # Generate speech tokens with T3
             speech_tokens = self.t3.inference(
                 t3_cond=self.conds.t3,
