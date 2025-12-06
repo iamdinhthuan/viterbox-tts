@@ -378,7 +378,7 @@ class Viterbox:
         text_tokens = F.pad(text_tokens, (1, 0), value=sot)
         text_tokens = F.pad(text_tokens, (0, 1), value=eot)
 
-        # Tự động nhận diện loại thiết bị để bật Autocast phù hợp
+        # Automatically detect device type to enable Autocast accordingly
         use_autocast = self.device in ['cuda', 'mps']
         device_type = 'cuda' if self.device == 'cuda' else 'mps'
 
